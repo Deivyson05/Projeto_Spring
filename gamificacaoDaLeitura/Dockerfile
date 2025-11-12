@@ -1,20 +1,26 @@
-# Usa imagem oficial do Java 17
-FROM eclipse-temurin:17-jdk-alpine
+# Usa imagem oficial do Java 17 com Gradle
+FROM gradle:8.5-jdk17-alpine AS build
 
 # Define diretório de trabalho
 WORKDIR /app
 
-# Copia todo o projeto
-COPY . .
+# Copia apenas arquivos necessários para o build
+COPY build.gradle settings.gradle ./
+COPY src ./src
 
-# Dá permissão de execução ao gradlew
-RUN chmod +x ./gradlew
+# Compila o projeto
+RUN gradle clean build -x test --no-daemon
 
-# Compila o projeto (sem rodar testes)
-RUN ./gradlew clean build -x test
+# Segunda etapa: imagem final menor
+FROM eclipse-temurin:17-jre-alpine
+
+WORKDIR /app
+
+# Copia apenas o JAR da etapa de build
+COPY --from=build /app/build/libs/*.jar app.jar
 
 # Expõe a porta
 EXPOSE 8080
 
-# Comando para iniciar a aplicação
-CMD ["java", "-Dserver.port=${PORT}", "-Dspring.profiles.active=prod", "-jar", "build/libs/app.jar"]
+# Comando para iniciar
+CMD ["java", "-Dserver.port=${PORT}", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
