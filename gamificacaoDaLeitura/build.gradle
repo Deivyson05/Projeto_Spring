@@ -1,0 +1,9 @@
+// Configuração para gerar JAR executável
+bootJar {
+    enabled = true
+    archiveFileName = 'app.jar'
+}
+
+jar {
+    enabled = false
+}

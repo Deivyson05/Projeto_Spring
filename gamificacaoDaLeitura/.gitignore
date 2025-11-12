@@ -4,6 +4,13 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+### Senhas e configurações locais ###
+application-dev.properties
+application-prod.properties
+application-local.properties
+*.env
+.env
+
 ### STS ###
 .apt_generated
 .classpath
