@@ -15,6 +15,18 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
 
+    // UsuariosService.java
+    @Transactional(readOnly = true)
+    public Usuario login(String email, String senha) {
+        var usuario = usuarioRepository.findByEmail(email)
+            .orElseThrow(() -> new IllegalArgumentException("Email ou senha inválidos"));
+
+        boolean ok = senha.equals(usuario.getSenha()); // <- simples, sem hash
+
+        if (!ok) throw new IllegalArgumentException("Email ou senha inválidos");
+        return usuario;
+    }
+
     @Transactional
     public Usuario criar(Usuario usuario) {
         if (usuarioRepository.existsByEmail(usuario.getEmail())) {

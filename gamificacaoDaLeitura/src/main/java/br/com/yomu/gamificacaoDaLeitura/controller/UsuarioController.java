@@ -26,7 +26,50 @@ public class UsuarioController {
 
     private final UsuarioService usuarioService;
 
+    // ====== records inline p/ Swagger ======
+    @Schema(name = "LoginBody", description = "Credenciais para login (estudo)")
+    public static record LoginBody(
+            @Schema(example = "joao@email.com", required = true) String email,
+            @Schema(example = "senha123", required = true) String senha
+    ) {}
+
+    @Schema(name = "LoginResult", description = "Resposta do login")
+    public static record LoginResult(
+            @Schema(example = "123e4567-e89b-12d3-a456-426614174000") UUID id,
+            @Schema(example = "joao_silva") String nomeUsuario,
+            @Schema(example = "joao@email.com") String email,
+            @Schema(example = "https://example.com/foto.jpg") String fotoPerfil,
+            @Schema(example = "Login efetuado com sucesso") String message
+    ) {}
+
+    @PostMapping(value = "/login", consumes = "application/json", produces = "application/json")
+    @Operation(
+        summary = "Login por e-mail e senha",
+        description = "Autentica o usuário pelo e-mail e senha e retorna dados básicos do perfil.",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Login OK",
+                content = @Content(schema = @Schema(implementation = LoginResult.class))),
+            @ApiResponse(responseCode = "400", description = "Credenciais inválidas",
+                content = @Content(schema = @Schema(implementation = String.class)))
+        }
+    )
+    public ResponseEntity<?> login(@Valid @RequestBody LoginBody body) {
+        try {
+            var u = usuarioService.login(body.email(), body.senha());
+            return ResponseEntity.ok(new LoginResult(
+                    u.getId(),
+                    u.getNomeUsuario(),
+                    u.getEmail(),
+                    u.getFotoPerfil(),
+                    "Login efetuado com sucesso"
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Email ou senha inválidos");
+        }
+    }
+
     @PostMapping
+    @GetMapping("/Criar")
     @Operation(summary = "Criar novo usuário", description = "Cadastra um novo usuário no sistema com geração automática de código de convite")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Usuário criado com sucesso",
