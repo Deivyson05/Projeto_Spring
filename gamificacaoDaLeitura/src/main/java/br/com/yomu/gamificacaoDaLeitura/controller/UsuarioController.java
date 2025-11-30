@@ -14,6 +14,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import br.com.yomu.gamificacaoDaLeitura.swagger.UsuarioSwagger.UsuarioCreate;
+import br.com.yomu.gamificacaoDaLeitura.swagger.UsuarioSwagger.UsuarioResponse;
+import br.com.yomu.gamificacaoDaLeitura.swagger.UsuarioSwagger.UsuarioSummary;
+import br.com.yomu.gamificacaoDaLeitura.swagger.UsuarioSwagger.UsuarioUpdate;
+import br.com.yomu.gamificacaoDaLeitura.swagger.UsuarioSwagger.LoginBody;
+import br.com.yomu.gamificacaoDaLeitura.swagger.UsuarioSwagger.LoginResult;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,22 +32,7 @@ public class UsuarioController {
 
     private final UsuarioService usuarioService;
 
-    // ====== records inline p/ Swagger ======
-    @Schema(name = "LoginBody", description = "Credenciais para login (estudo)")
-    public static record LoginBody(
-            @Schema(example = "joao@email.com", required = true) String email,
-            @Schema(example = "senha123", required = true) String senha
-    ) {}
-
-    @Schema(name = "LoginResult", description = "Resposta do login")
-    public static record LoginResult(
-            @Schema(example = "123e4567-e89b-12d3-a456-426614174000") UUID id,
-            @Schema(example = "joao_silva") String nomeUsuario,
-            @Schema(example = "joao@email.com") String email,
-            @Schema(example = "https://example.com/foto.jpg") String fotoPerfil,
-            @Schema(example = "Login efetuado com sucesso") String message
-    ) {}
-
+    // -------------------- LOGIN --------------------
     @PostMapping(value = "/login", consumes = "application/json", produces = "application/json")
     @Operation(
         summary = "Login por e-mail e senha",
@@ -68,12 +59,12 @@ public class UsuarioController {
         }
     }
 
-    @PostMapping
-    @GetMapping("/Criar")
+    // -------------------- CRIAR --------------------
+    @PostMapping(consumes = "application/json", produces = "application/json")
     @Operation(summary = "Criar novo usuário", description = "Cadastra um novo usuário no sistema com geração automática de código de convite")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Usuário criado com sucesso",
-            content = @Content(schema = @Schema(implementation = Usuario.class))),
+            content = @Content(schema = @Schema(implementation = UsuarioResponse.class))),
         @ApiResponse(responseCode = "400", description = "Dados inválidos ou email/username já cadastrado",
             content = @Content)
     })
@@ -81,29 +72,19 @@ public class UsuarioController {
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Dados do usuário a ser criado",
             required = true,
-            content = @Content(
-                schema = @Schema(
-                    example = "{\n" +
-                              "  \"nomeUsuario\": \"joao_silva\",\n" +
-                              "  \"fotoPerfil\": \"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA\",\n" +
-                              "  \"nome\": \"João Silva\",\n" +
-                              "  \"genero\": \"masculino\",\n" +
-                              "  \"email\": \"joao@email.com\",\n" +
-                              "  \"senha\": \"senha123\"\n" +
-                              "}"
-                )
-            )
+            content = @Content(schema = @Schema(implementation = UsuarioCreate.class))
         )
         @Valid @RequestBody Usuario usuario) {
         Usuario usuarioCriado = usuarioService.criar(usuario);
         return ResponseEntity.status(HttpStatus.CREATED).body(usuarioCriado);
     }
 
+    // -------------------- BUSCAR POR ID --------------------    
     @GetMapping("/{id}")
     @Operation(summary = "Buscar usuário por ID", description = "Retorna os dados completos de um usuário pelo seu UUID")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Usuário encontrado",
-            content = @Content(schema = @Schema(implementation = Usuario.class))),
+            content = @Content(schema = @Schema(implementation = UsuarioResponse.class))),
         @ApiResponse(responseCode = "404", description = "Usuário não encontrado",
             content = @Content)
     })
@@ -114,6 +95,7 @@ public class UsuarioController {
         return ResponseEntity.ok(usuario);
     }
 
+    // -------------------- BUSCAR POR EMAIL --------------------
     @GetMapping("/email/{email}")
     @Operation(summary = "Buscar usuário por email", description = "Retorna um usuário pelo seu endereço de email")
     public ResponseEntity<Usuario> buscarPorEmail(
@@ -133,15 +115,24 @@ public class UsuarioController {
         return ResponseEntity.ok(usuario);
     }
 
+    // -------------------- LISTAR --------------------
     @GetMapping
     @Operation(summary = "Listar todos os usuários", description = "Retorna lista completa de usuários cadastrados")
+    @ApiResponse(responseCode = "200", description = "Lista de usuários",
+        content = @Content(schema = @Schema(implementation = UsuarioSummary.class)))
     public ResponseEntity<List<Usuario>> listarTodos() {
         List<Usuario> usuarios = usuarioService.listarTodos();
         return ResponseEntity.ok(usuarios);
     }
 
+    // -------------------- ATUALIZAR --------------------
     @PutMapping("/{id}")
     @Operation(summary = "Atualizar usuário", description = "Atualiza dados do perfil do usuário")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+        description = "Campos para atualização do usuário",
+        required = true,
+        content = @Content(schema = @Schema(implementation = UsuarioUpdate.class))
+    )
     public ResponseEntity<Usuario> atualizar(
             @Parameter(description = "UUID do usuário") @PathVariable UUID id,
             @RequestBody Usuario usuario) {
@@ -149,6 +140,7 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioAtualizado);
     }
 
+    // -------------------- DELETAR --------------------
     @DeleteMapping("/{id}")
     @Operation(summary = "Deletar usuário", description = "Remove permanentemente um usuário do sistema")
     @ApiResponses(value = {
