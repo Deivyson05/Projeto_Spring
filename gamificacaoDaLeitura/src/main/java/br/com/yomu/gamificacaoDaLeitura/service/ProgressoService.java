@@ -1,10 +1,14 @@
 package br.com.yomu.gamificacaoDaLeitura.service;
 
+import br.com.yomu.gamificacaoDaLeitura.dto.ProgressoCreateDTO;
 import br.com.yomu.gamificacaoDaLeitura.model.Livro;
 import br.com.yomu.gamificacaoDaLeitura.model.Progresso;
 import br.com.yomu.gamificacaoDaLeitura.model.Usuario;
 import br.com.yomu.gamificacaoDaLeitura.repository.ProgressoRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,30 +18,39 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProgressoService {
 
     private final ProgressoRepository progressoRepository;
     private final UsuarioService usuarioService;
     private final LivroService livroService;
     private final MetaService metaService;
+    private final RankingAsyncService rankingAsyncService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
-    public Progresso registrar(UUID usuarioId, UUID livroId, Progresso progresso) {
+    public Progresso registrar(UUID usuarioId, UUID livroId, ProgressoCreateDTO dto) { // ✅ Recebe DTO
+        log.info("📖 Registrando progresso para usuário {} no livro {}", usuarioId, livroId);
+        
         Usuario usuario = usuarioService.buscarPorId(usuarioId);
         Livro livro = livroService.buscarPorId(livroId);
-        
+    
+        // Criar entidade Progresso a partir do DTO
+        Progresso progresso = new Progresso();
         progresso.setUsuario(usuario);
         progresso.setLivro(livro);
-        
+        progresso.setQuantidade(dto.getQuantidade());
+        progresso.setTipoProgresso(dto.getTipoProgresso());
+    
         // XP será calculado automaticamente pelo @PrePersist
         Progresso progressoSalvo = progressoRepository.save(progresso);
-        
-        // Adicionar XP ao usuário
+        log.info("✅ Progresso registrado: {} XP gerado", progressoSalvo.getXpGerado());
+    
         usuarioService.adicionarXp(usuarioId, progressoSalvo.getXpGerado());
-        
-        // Atualizar metas ativas
-        metaService.atualizarMetasComProgresso(usuarioId, progresso);
-        
+        metaService.atualizarMetasComProgresso(usuarioId, progressoSalvo);
+
+        eventPublisher.publishEvent(new ProgressoRegistradoEvent(usuarioId));
+    
         return progressoSalvo;
     }
 

@@ -1,0 +1,26 @@
+package br.com.yomu.gamificacaoDaLeitura.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+
+import java.util.concurrent.Executor;
+
+@Configuration
+@EnableAsync
+public class AsyncConfig {
+    
+    @Bean(name = "rankingTaskExecutor")
+    public Executor rankingTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2); // Número mínimo de threads
+        executor.setMaxPoolSize(4); // Número máximo de threads
+        executor.setQueueCapacity(100); // Tamanho da fila de tarefas
+        executor.setThreadNamePrefix("ranking-async-");
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(60);
+        executor.initialize();
+        return executor;
+    }
+}

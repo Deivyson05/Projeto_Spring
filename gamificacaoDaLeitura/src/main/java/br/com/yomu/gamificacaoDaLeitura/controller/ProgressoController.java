@@ -1,5 +1,6 @@
 package br.com.yomu.gamificacaoDaLeitura.controller;
 
+import br.com.yomu.gamificacaoDaLeitura.dto.ProgressoCreateDTO;
 import br.com.yomu.gamificacaoDaLeitura.model.Progresso;
 import br.com.yomu.gamificacaoDaLeitura.service.ProgressoService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,42 +32,41 @@ public class ProgressoController {
 
     private final ProgressoService progressoService;
 
-    // =============== REGISTRAR PROGRESSO =========================
     @PostMapping("/usuario/{usuarioId}/livro/{livroId}")
-    @Operation(
-            summary = "Registrar progresso de leitura",
-            description = "Registra páginas/capítulos lidos e calcula automaticamente o XP gerado."
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Progresso registrado com sucesso",
-                    content = @Content(
-                            schema = @Schema(implementation = Progresso.class),
-                            examples = @ExampleObject(
-                                    name = "Exemplo registro de progresso",
-                                    value = """
-                                    {
-                                        "quantidade": 5,
-                                        "tipoProgresso": "PAGINA"
-                                    }
-                                    """
-                            )
-                    )
-            ),
-            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
-            @ApiResponse(responseCode = "404", description = "Usuário ou livro não encontrado")
-    })
-    public ResponseEntity<Progresso> registrar(
-            @Parameter(description = "ID do usuário", required = true)
-            @PathVariable UUID usuarioId,
+@Operation(
+        summary = "Registrar progresso de leitura",
+        description = "Registra páginas/capítulos lidos e calcula automaticamente o XP gerado."
+)
+@ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Progresso registrado com sucesso",
+                content = @Content(
+                        schema = @Schema(implementation = Progresso.class),
+                        examples = @ExampleObject(
+                                name = "Exemplo registro de progresso",
+                                value = """
+                                {
+                                    "quantidade": 5,
+                                    "tipoProgresso": "PAGINA"
+                                }
+                                """
+                        )
+                )
+        ),
+        @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+        @ApiResponse(responseCode = "404", description = "Usuário ou livro não encontrado")
+})
+public ResponseEntity<Progresso> registrar(
+        @Parameter(description = "ID do usuário", required = true)
+        @PathVariable UUID usuarioId,
 
-            @Parameter(description = "ID do livro", required = true)
-            @PathVariable UUID livroId,
+        @Parameter(description = "ID do livro", required = true)
+        @PathVariable UUID livroId,
 
-            @Valid @RequestBody Progresso progresso) {
+        @Valid @RequestBody ProgressoCreateDTO dto) { // ✅ Mudança aqui
 
-        Progresso progressoRegistrado = progressoService.registrar(usuarioId, livroId, progresso);
-        return ResponseEntity.status(HttpStatus.CREATED).body(progressoRegistrado);
-    }
+    Progresso progressoRegistrado = progressoService.registrar(usuarioId, livroId, dto);
+    return ResponseEntity.status(HttpStatus.CREATED).body(progressoRegistrado);
+}
 
     // =============== LISTAR POR USUARIO =========================
     @GetMapping("/usuario/{usuarioId}")
